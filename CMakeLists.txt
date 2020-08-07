@@ -111,7 +111,7 @@ catkin_package(
 set(CUDA_HOST_COMPILER "/usr/bin/gcc-6")
 SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
 SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
-CUDA_ADD_LIBRARY(TestLib STATIC src/vectoradd.cu)
+CUDA_ADD_LIBRARY(TestLib SHARED src/vectoradd.cu)
 
 add_library(${PROJECT_NAME}
             src/spatio_temporal_voxel_layer.cpp
@@ -131,6 +131,7 @@ target_link_libraries(${PROJECT_NAME}
   ${OpenVDB_LIBRARIES}
   ${TBB_LIBRARIES}
   ${catkin_LIBRARIES}
+  TestLib
 )
 
 # For testing on standalone, don't want to ship with production builds
@@ -144,7 +145,6 @@ target_link_libraries(minimal_test
  ${OpenVDB_LIBRARIES}
  ${TBB_LIBRARIES}
  ${catkin_LIBRARIES}
- TestLib
 )
 
 install(TARGETS ${PROJECT_NAME} #minimal_test

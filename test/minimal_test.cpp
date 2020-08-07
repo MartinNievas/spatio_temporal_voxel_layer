@@ -71,7 +71,7 @@ void TransformThread()
   }
 }
 
-int *testmain(int num, int threads);
+// int *testmain(int num, int threads);
 
 /*****************************************************************************/
 int main(int argc, char **argv)
@@ -93,7 +93,7 @@ int main(int argc, char **argv)
   {
     // then make a thread to do something with a costmap pointer...
     ros::spinOnce();
-    p = testmain(size*N,THREADS_PER_BLOCK);
+    // p = testmain(size*N,THREADS_PER_BLOCK);
     r.sleep();
   }
   return 1;

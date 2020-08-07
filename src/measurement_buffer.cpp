@@ -38,6 +38,8 @@
 #include <spatio_temporal_voxel_layer/measurement_buffer.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+int *testmain(int num, int threads);
+
 namespace buffer
 {
 
@@ -243,7 +245,8 @@ void MeasurementBuffer::cudaTest(void)
 {
   int *p;
   int size=10;
-  // p = testmain(size*(1024*1024), 512);
+  p = testmain(size*(1024*1024), 512);
+  // ROS_INFO("%s\n", "CUDA");
 }
 /*****************************************************************************/
 void MeasurementBuffer::ResetAllMeasurements(void)

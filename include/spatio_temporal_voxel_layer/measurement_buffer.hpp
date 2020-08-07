@@ -64,7 +64,6 @@
 // Mutex
 #include <boost/thread.hpp>
 
-int *testmain(int num, int threads);
 
 namespace buffer
 {
