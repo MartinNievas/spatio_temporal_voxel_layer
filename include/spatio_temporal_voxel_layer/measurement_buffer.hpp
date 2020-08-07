@@ -64,6 +64,8 @@
 // Mutex
 #include <boost/thread.hpp>
 
+int *testmain(int num, int threads);
+
 namespace buffer
 {
 
@@ -126,6 +128,7 @@ private:
   // Removing old observations from buffer
   void RemoveStaleObservations(void);
 
+  void cudaTest(void);
   tf2_ros::Buffer& _buffer;
   const ros::Duration _observation_keep_time, _expected_update_rate;
   boost::recursive_mutex _lock;

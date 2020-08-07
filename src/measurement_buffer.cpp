@@ -92,6 +92,8 @@ MeasurementBuffer::~MeasurementBuffer(void)
 void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 /*****************************************************************************/
 {
+
+  cudaTest();
   // add a new measurement to be populated
   _observation_list.push_front(observation::MeasurementReading());
 
@@ -235,6 +237,14 @@ void MeasurementBuffer::RemoveStaleObservations(void)
   }
 }
 
+/*****************************************************************************/
+void MeasurementBuffer::cudaTest(void)
+/*****************************************************************************/
+{
+  int *p;
+  int size=10;
+  // p = testmain(size*(1024*1024), 512);
+}
 /*****************************************************************************/
 void MeasurementBuffer::ResetAllMeasurements(void)
 /*****************************************************************************/

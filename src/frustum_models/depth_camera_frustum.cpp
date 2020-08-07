@@ -182,7 +182,7 @@ void DepthCameraFrustum::TransformModel(void)
     for (uint i = 0; i !=  _frustum_pts.size(); i++)
     {
       // frustum pts
-      msg.header.frame_id = std::string("map");
+      msg.header.frame_id = std::string("odom");
       msg.type = visualization_msgs::Marker::SPHERE;
       msg.action = visualization_msgs::Marker::ADD;
       msg.scale.x = 0.15;
@@ -211,7 +211,7 @@ void DepthCameraFrustum::TransformModel(void)
     }
 
     // frustum lines
-    msg.header.frame_id = std::string("map");
+    msg.header.frame_id = std::string("odom");
     msg.type = visualization_msgs::Marker::LINE_STRIP;
     msg.scale.x = 0.15; /// ?
     msg.scale.y = 0.15; /// ?

@@ -4,6 +4,7 @@ project(spatio_temporal_voxel_layer)
 add_definitions (-std=c++17)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake/")
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} ${CUDADEVICE_NVCC_FLAGS} -Xptxas -v")
 
 find_package(catkin REQUIRED COMPONENTS
   costmap_2d
@@ -60,6 +61,7 @@ find_package(TBB REQUIRED)
 remove_definitions(-DDISABLE_LIBUSB-1.0)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED COMPONENTS system thread)
+find_package(CUDA 7.5 REQUIRED)
 include_directories(
     include
     ${BOOST_INCLUDE_DIRS}
@@ -105,6 +107,12 @@ catkin_package(
         Boost
 )
 
+# CUDA things
+set(CUDA_HOST_COMPILER "/usr/bin/gcc-6")
+SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
+SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
+CUDA_ADD_LIBRARY(TestLib STATIC src/vectoradd.cu)
+
 add_library(${PROJECT_NAME}
             src/spatio_temporal_voxel_layer.cpp
             src/spatio_temporal_voxel_grid.cpp
@@ -113,6 +121,8 @@ add_library(${PROJECT_NAME}
             src/frustum_models/three_dimensional_lidar_frustum.cpp
             src/vdb2pc.cpp
 )
+
+#add_dependencies(minimal_test TestLib)
 add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp ${PROJECT_NAME}_gencfg)
 target_link_libraries(${PROJECT_NAME}
   ${Boost_LIBRARIES}
@@ -124,17 +134,18 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 # For testing on standalone, don't want to ship with production builds
-#add_executable(minimal_test
-#            test/minimal_test.cpp
-#)
-#target_link_libraries(minimal_test
-#  ${Boost_LIBRARIES}
-#  ${EIGEN3_LIBRARIES}
-#  ${PCL_LIBRARIES}
-#  ${OpenVDB_LIBRARIES}
-#  ${TBB_LIBRARIES}
-#  ${catkin_LIBRARIES}
-#)
+add_executable(minimal_test
+           test/minimal_test.cpp
+)
+target_link_libraries(minimal_test
+ ${Boost_LIBRARIES}
+ ${EIGEN3_LIBRARIES}
+ ${PCL_LIBRARIES}
+ ${OpenVDB_LIBRARIES}
+ ${TBB_LIBRARIES}
+ ${catkin_LIBRARIES}
+ TestLib
+)
 
 install(TARGETS ${PROJECT_NAME} #minimal_test
     ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}

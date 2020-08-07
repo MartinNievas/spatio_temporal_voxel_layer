@@ -47,6 +47,8 @@
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
+#define N (1024*1024)
+#define THREADS_PER_BLOCK 512
 
 /*****************************************************************************/
 void TransformThread()
@@ -60,14 +62,16 @@ void TransformThread()
   ros::Rate r(20);
   while (ros::ok())
   {
-    tfB.sendTransform(tf::StampedTransform(transform, ros::Time::now(), \
-                                                        "map", "base_link"));
-    tfB.sendTransform(tf::StampedTransform(transform, ros::Time::now(), \
-                                                "base_link", "camera_link"));
+    // tfB.sendTransform(tf::StampedTransform(transform, ros::Time::now(), \
+                                                        // "map", "link_chassis"));
+    // tfB.sendTransform(tf::StampedTransform(transform, ros::Time::now(), \
+                                                // "link_chassis", "camera_link"));
     r.sleep();
     ros::spinOnce();
   }
 }
+
+int *testmain(int num, int threads);
 
 /*****************************************************************************/
 int main(int argc, char **argv)
@@ -81,12 +85,15 @@ int main(int argc, char **argv)
 
   costmap_2d::Costmap2DROS costmap("global_costmap", tf_buffer);
   costmap.start();
+  int *p;
+  int size=10;
 
   ros::Rate r(10);
   while (ros::ok())
   {
     // then make a thread to do something with a costmap pointer...
     ros::spinOnce();
+    p = testmain(size*N,THREADS_PER_BLOCK);
     r.sleep();
   }
   return 1;
