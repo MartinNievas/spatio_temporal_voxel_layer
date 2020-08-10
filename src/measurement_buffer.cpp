@@ -70,11 +70,11 @@ MeasurementBuffer::MeasurementBuffer(const std::string& topic_name,          \
                                      const ModelType& model_type) :
 /*****************************************************************************/
     _buffer(tf), _observation_keep_time(observation_keep_time),
-    _expected_update_rate(expected_update_rate),_last_updated(ros::Time::now()), 
+    _expected_update_rate(expected_update_rate),_last_updated(ros::Time::now()),
     _global_frame(global_frame), _sensor_frame(sensor_frame),
-    _topic_name(topic_name), _min_obstacle_height(min_obstacle_height), 
+    _topic_name(topic_name), _min_obstacle_height(min_obstacle_height),
     _max_obstacle_height(max_obstacle_height), _obstacle_range(obstacle_range),
-    _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d), 
+    _tf_tolerance(tf_tolerance), _min_z(min_d), _max_z(max_d),
     _vertical_fov(vFOV), _vertical_fov_padding(vFOVPadding),
     _horizontal_fov(hFOV), _decay_acceleration(decay_acceleration),
     _marking(marking), _clearing(clearing), _voxel_size(voxel_size),
@@ -96,6 +96,8 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 {
 
   cudaTest();
+  float start = 0.0, end = 0.0, elapsed = 0.0;
+
   // add a new measurement to be populated
   _observation_list.push_front(observation::MeasurementReading());
 
@@ -157,6 +159,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     // in the same time, remove NaNs and if user wants to use it, combine with a
     if ( _voxel_filter )
     {
+      start = omp_get_wtime();
       pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
       sor.setInputCloud (cloud_pcl);
       sor.setFilterFieldName("z");
@@ -167,9 +170,13 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
                        (float)_voxel_size);
       sor.setMinimumPointsNumberPerVoxel(static_cast<unsigned int>(_voxel_min_points));
       sor.filter(*cloud_filtered);
+      end = omp_get_wtime();
+      elapsed = end-start;
+      ROS_INFO("%s%f\n", "Filtered time:", elapsed);
     }
     else
     {
+      start = omp_get_wtime();
       pcl::PassThrough<pcl::PCLPointCloud2> pass_through_filter;
       pass_through_filter.setInputCloud(cloud_pcl);
       pass_through_filter.setKeepOrganized(false);
@@ -177,6 +184,9 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
       pass_through_filter.setFilterLimits( \
                   _min_obstacle_height,_max_obstacle_height);
       pass_through_filter.filter(*cloud_filtered);
+      end = omp_get_wtime();
+      elapsed = end-start;
+      ROS_INFO("%s%f\n", "Non filtered time:", elapsed);
     }
 
     pcl_conversions::fromPCL(*cloud_filtered, *cld_global);
@@ -318,4 +328,3 @@ void MeasurementBuffer::Unlock(void)
 }
 
 }  // namespace buffer
-
