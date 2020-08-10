@@ -63,7 +63,7 @@ SpatioTemporalVoxelGrid::~SpatioTemporalVoxelGrid(void)
   // pcl pointclouds free themselves
   if (_cost_map)
   {
-    delete _cost_map;    
+    delete _cost_map;
   }
 
   if (_grid_points)
@@ -272,15 +272,20 @@ void SpatioTemporalVoxelGrid::Mark(const \
 /*****************************************************************************/
 {
   boost::unique_lock<boost::mutex> lock(_grid_lock);
+  float start = 0.0, end = 0.0, elapsed = 0.0;
 
   // mark the grid
   if (marking_readings.size() > 0)
   {
+    start = omp_get_wtime();
     //tbb::parallel_do(marking_readings, *this); /*must do via merged trees*/
     for (int i=0; i!= marking_readings.size(); i++)
     {
       (*this)(marking_readings.at(i));
     }
+    end = omp_get_wtime();
+    elapsed = end-start;
+    ROS_INFO("%s%f\n", "Call Mark time:", elapsed);
   }
   return;
 }

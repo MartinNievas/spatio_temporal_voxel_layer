@@ -70,6 +70,8 @@
 // Mutex and locks
 #include <boost/thread.hpp>
 #include <boost/thread/recursive_mutex.hpp>
+// handy omp_get_wtime()
+#include <omp.h>
 
 namespace volume_grid
 {
