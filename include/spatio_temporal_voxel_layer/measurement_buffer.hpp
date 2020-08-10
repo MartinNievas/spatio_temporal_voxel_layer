@@ -63,7 +63,8 @@
 #include <geometry_msgs/TransformStamped.h>
 // Mutex
 #include <boost/thread.hpp>
-
+// handy omp_get_wtime()
+#include <omp.h>
 
 namespace buffer
 {
