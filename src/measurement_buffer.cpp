@@ -38,7 +38,11 @@
 #include <spatio_temporal_voxel_layer/measurement_buffer.hpp>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 
+#include <cuda.h>
+#include <cuda_runtime.h>
+
 int *testmain(int num, int threads);
+float *filter(float*,float*,float*,size_t,size_t);
 
 namespace buffer
 {
@@ -95,7 +99,8 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 /*****************************************************************************/
 {
 
-  cudaTest();
+  // cudaTest();
+
   float start = 0.0, end = 0.0, elapsed = 0.0;
 
   // add a new measurement to be populated
@@ -150,47 +155,94 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
                  _global_frame, cloud.header.frame_id, cloud.header.stamp);
     tf2::doTransform (cloud, *cld_global, tf_stamped);
 
-    pcl::PCLPointCloud2::Ptr cloud_pcl (new pcl::PCLPointCloud2 ());
-    pcl::PCLPointCloud2::Ptr cloud_filtered (new pcl::PCLPointCloud2 ());
+    point_cloud_ptr output(new sensor_msgs::PointCloud2());
+    pcl::PointCloud<pcl::PointXYZ> cloud_pcl;
 
-    pcl_conversions::toPCL(*cld_global, *cloud_pcl);
+    // pcl::PCLPointCloud2::Ptr cloud_pcl (new pcl::PCLPointCloud2 ());
+    // pcl::PCLPointCloud2::Ptr cloud_filtered (new pcl::PCLPointCloud2 ());
+    // pcl_conversions::toPCL(*cld_global, *cloud_pcl);
 
     // remove points that are below or above our height restrictions, and
     // in the same time, remove NaNs and if user wants to use it, combine with a
     if ( _voxel_filter )
     {
-      start = omp_get_wtime();
-      pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-      sor.setInputCloud (cloud_pcl);
-      sor.setFilterFieldName("z");
-      sor.setFilterLimits(_min_obstacle_height,_max_obstacle_height);
-      sor.setDownsampleAllData(false);
-      sor.setLeafSize ((float)_voxel_size,
-                       (float)_voxel_size,
-                       (float)_voxel_size);
-      sor.setMinimumPointsNumberPerVoxel(static_cast<unsigned int>(_voxel_min_points));
-      sor.filter(*cloud_filtered);
-      end = omp_get_wtime();
-      elapsed = end-start;
-      ROS_INFO("%s%f\n", "Filtered time:", elapsed);
+
+      ROS_INFO("%s(%d,%d)\n", "cloud_msg size: ", (*cld_global).width, (*cld_global).height);
+      sensor_msgs::PointCloud2 const& cloud_msg = *cld_global;
+      sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud_msg, "x");
+      sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud_msg, "y");
+      sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud_msg, "z");
+
+      // Memory allocation issue
+      size_t size = (*cld_global).width*(*cld_global).height;
+
+      size_t memory_size = size * sizeof(float);
+
+      ROS_INFO("%s%d%s\n", "Filtering:", size, " points");
+
+      if (_initialized == 0){
+        ask_for_memory(memory_size);
+        _initialized = 1;
+      }
+
+      // Fill in the cloud data
+      cloud_pcl.width  = cloud.width;
+      cloud_pcl.height = cloud.height;
+      cloud_pcl.points.resize(cloud.width * cloud.height);
+
+      for(size_t i=0; i < size; ++i){
+        h_inx[i] = *(iter_x+i);
+        h_iny[i] = *(iter_y+i);
+        h_inz[i] = *(iter_z+i);
+      }
+
+      p = filter(h_inx, h_iny, h_inz, size, THREADS_PER_BLOCK);
+
+      ROS_INFO("%s\n", "Fill pointcloud");
+      // ROS_INFO("%s_%f,%f,%f\n", "Fill pointcloud", h_inx[0], h_iny[0], h_inz[0]);
+
+      for (size_t i = 0; i < cloud_pcl.points.size(); ++i)
+      {
+        cloud_pcl.points[i].x = h_inx[i];
+        cloud_pcl.points[i].y = h_iny[i];
+        cloud_pcl.points[i].z = h_inz[i];
+      }
+
+      ROS_INFO("%s\n", "Convert pointcloud");
+      pcl::toROSMsg(cloud_pcl, *output);
+
+      // start = omp_get_wtime();
+      // pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
+      // sor.setInputCloud (cloud_pcl);
+      // sor.setFilterFieldName("z");
+      // sor.setFilterLimits(_min_obstacle_height,_max_obstacle_height);
+      // sor.setDownsampleAllData(false);
+      // sor.setLeafSize ((float)_voxel_size,
+      //                  (float)_voxel_size,
+      //                  (float)_voxel_size);
+      // sor.setMinimumPointsNumberPerVoxel(static_cast<unsigned int>(_voxel_min_points));
+      // sor.filter(*cloud_filtered);
+      // end = omp_get_wtime();
+      // elapsed = end-start;
+      // ROS_INFO("%s%f\n", "Filtered time:", elapsed);
     }
     else
     {
-      start = omp_get_wtime();
-      pcl::PassThrough<pcl::PCLPointCloud2> pass_through_filter;
-      pass_through_filter.setInputCloud(cloud_pcl);
-      pass_through_filter.setKeepOrganized(false);
-      pass_through_filter.setFilterFieldName("z");
-      pass_through_filter.setFilterLimits( \
-                  _min_obstacle_height,_max_obstacle_height);
-      pass_through_filter.filter(*cloud_filtered);
-      end = omp_get_wtime();
-      elapsed = end-start;
-      ROS_INFO("%s%f\n", "Non filtered time:", elapsed);
+      // start = omp_get_wtime();
+      // pcl::PassThrough<pcl::PCLPointCloud2> pass_through_filter;
+      // pass_through_filter.setInputCloud(cloud_pcl);
+      // pass_through_filter.setKeepOrganized(false);
+      // pass_through_filter.setFilterFieldName("z");
+      // pass_through_filter.setFilterLimits( \
+      //             _min_obstacle_height,_max_obstacle_height);
+      // pass_through_filter.filter(*cloud_filtered);
+      // end = omp_get_wtime();
+      // elapsed = end-start;
+      // ROS_INFO("%s%f\n", "Non filtered time:", elapsed);
     }
 
-    pcl_conversions::fromPCL(*cloud_filtered, *cld_global);
-    _observation_list.front()._cloud = cld_global;
+    // pcl_conversions::fromPCL(*cloud_filtered, *cld_global);
+    _observation_list.front()._cloud = output;
   }
   catch (tf::TransformException& ex)
   {
@@ -258,6 +310,17 @@ void MeasurementBuffer::cudaTest(void)
   p = testmain(size*(1024*1024), 512);
   // ROS_INFO("%s\n", "CUDA");
 }
+
+/*****************************************************************************/
+void MeasurementBuffer::ask_for_memory(size_t size)
+/*****************************************************************************/
+{
+  cudaMallocManaged((void **)&h_inx, size);
+  cudaMallocManaged((void **)&h_iny, size);
+  cudaMallocManaged((void **)&h_inz, size);
+  ROS_INFO("%s\n", "Memory reservation");
+}
+
 /*****************************************************************************/
 void MeasurementBuffer::ResetAllMeasurements(void)
 /*****************************************************************************/

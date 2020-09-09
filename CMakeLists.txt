@@ -133,6 +133,7 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
   TestLib
 )
+target_link_libraries(${PROJECT_NAME} PRIVATE "-lgomp")
 
 # For testing on standalone, don't want to ship with production builds
 add_executable(minimal_test

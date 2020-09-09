@@ -58,6 +58,7 @@
 #include "message_filters/subscriber.h"
 // msgs
 #include <sensor_msgs/PointCloud2.h>
+#include <sensor_msgs/point_cloud2_iterator.h>
 #include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/TransformStamped.h>
@@ -65,6 +66,7 @@
 #include <boost/thread.hpp>
 // handy omp_get_wtime()
 #include <omp.h>
+#define THREADS_PER_BLOCK 128
 
 namespace buffer
 {
@@ -125,10 +127,15 @@ public:
   void Unlock(void);
 
 private:
+
+  int _initialized = 0;
+  float *p;
+  float *h_inx, *h_iny, *h_inz; // device copies of inputs and output
   // Removing old observations from buffer
   void RemoveStaleObservations(void);
 
   void cudaTest(void);
+  void ask_for_memory(size_t);
   tf2_ros::Buffer& _buffer;
   const ros::Duration _observation_keep_time, _expected_update_rate;
   boost::recursive_mutex _lock;
