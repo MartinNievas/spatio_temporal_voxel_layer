@@ -134,7 +134,6 @@ private:
   // Removing old observations from buffer
   void RemoveStaleObservations(void);
 
-  void cudaTest(void);
   void ask_for_memory(size_t);
   tf2_ros::Buffer& _buffer;
   const ros::Duration _observation_keep_time, _expected_update_rate;
