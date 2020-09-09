@@ -36,6 +36,7 @@
  *********************************************************************/
 
 #include <spatio_temporal_voxel_layer/spatio_temporal_voxel_grid.hpp>
+#include <omp.h>
 
 namespace volume_grid
 {
@@ -295,6 +296,9 @@ void SpatioTemporalVoxelGrid::operator()(const \
                                     observation::MeasurementReading& obs) const
 /*****************************************************************************/
 {
+
+  float start = 0.0, end = 0.0, elapsed = 0.0;
+
   if (obs._marking)
   {
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
@@ -305,6 +309,7 @@ void SpatioTemporalVoxelGrid::operator()(const \
     sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
+    start = omp_get_wtime();
     for (iter_x, iter_y, iter_z; iter_x !=iter_x.end(); \
          ++iter_x, ++iter_y, ++iter_z)
     {
@@ -325,6 +330,9 @@ void SpatioTemporalVoxelGrid::operator()(const \
         std::cout << "Failed to mark point." << std::endl;
       }
     }
+    end = omp_get_wtime();
+    elapsed = end-start;
+    ROS_INFO("%s%f\n", "Operator time:", elapsed);
   }
   return;
 }
