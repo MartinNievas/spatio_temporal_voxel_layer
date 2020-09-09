@@ -36,6 +36,7 @@
  *********************************************************************/
 
 #include "spatio_temporal_voxel_layer/spatio_temporal_voxel_layer.hpp"
+#include <omp.h>
 
 namespace spatio_temporal_voxel_layer {
 
@@ -697,6 +698,8 @@ void SpatioTemporalVoxelLayer::updateBounds( \
 
   boost::recursive_mutex::scoped_lock lock(_voxel_grid_lock);
 
+
+
   // Steve's Note June 22, 2018
   // I dislike this necessity, I can't remove the master grid's knowledge about
   // STVL on the fly so I have play games with the API even though this isn't
@@ -716,10 +719,15 @@ void SpatioTemporalVoxelLayer::updateBounds( \
   ObservationsResetAfterReading();
   current_ = current;
 
+  float start = 0.0, end = 0.0, elapsed = -1.0;
   // navigation mode: clear observations, mapping mode: save maps and publish
   if (!_mapping_mode)
   {
+    start = omp_get_wtime();
     _voxel_grid->ClearFrustums(clearing_observations);
+    end = omp_get_wtime();
+    elapsed = end-start;
+    ROS_INFO("%s%f\n", "Clear Frusums time:", elapsed);
   }
   else if (ros::Time::now() - _last_map_save_time > _map_save_duration)
   {
@@ -737,10 +745,19 @@ void SpatioTemporalVoxelLayer::updateBounds( \
   }
 
   // mark observations
+  start = omp_get_wtime();
   _voxel_grid->Mark(marking_observations);
+  end = omp_get_wtime();
+  elapsed = end-start;
+  ROS_INFO("%s%f\n", "Mark observation time:", elapsed);
 
   // update the ROS Layered Costmap
+  start = omp_get_wtime();
   UpdateROSCostmap(min_x, min_y, max_x, max_y);
+  end = omp_get_wtime();
+  elapsed = end-start;
+  ROS_INFO("%s%f\n", "Update Cost Map time:", elapsed);
+
 
   // publish point cloud in navigation mode
   if (_publish_voxels && !_mapping_mode)
