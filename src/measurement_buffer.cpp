@@ -165,7 +165,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     if ( _voxel_filter )
     {
 
-      ROS_INFO("%s(%d,%d)\n", "cloud_msg size: ", (*cld_global).width, (*cld_global).height);
+      // ROS_INFO("%s(%d,%d)\n", "cloud_msg size: ", (*cld_global).width, (*cld_global).height);
       sensor_msgs::PointCloud2 const& cloud_msg = *cld_global;
       sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud_msg, "x");
       sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud_msg, "y");
@@ -176,7 +176,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 
       size_t memory_size = size * sizeof(float);
 
-      ROS_INFO("%s%d%s\n", "Filtering:", size, " points");
+      // ROS_INFO("%s%d%s\n", "Filtering:", size, " points");
 
       if (_initialized == 0){
         ask_for_memory(memory_size);
@@ -196,7 +196,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 
       p = filter(h_inx, h_iny, h_inz, size, THREADS_PER_BLOCK);
 
-      ROS_INFO("%s\n", "Fill pointcloud");
+      // ROS_INFO("%s\n", "Fill pointcloud");
       // ROS_INFO("%s_%f,%f,%f\n", "Fill pointcloud", h_inx[0], h_iny[0], h_inz[0]);
 
       for (size_t i = 0; i < cloud_pcl.points.size(); ++i)
@@ -206,7 +206,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
         cloud_pcl.points[i].z = h_inz[i];
       }
 
-      ROS_INFO("%s\n", "Convert pointcloud");
+      // ROS_INFO("%s\n", "Convert pointcloud");
       pcl::toROSMsg(cloud_pcl, *output);
 
       // start = omp_get_wtime();
@@ -306,7 +306,7 @@ void MeasurementBuffer::ask_for_memory(size_t size)
   cudaMallocManaged((void **)&h_inx, size);
   cudaMallocManaged((void **)&h_iny, size);
   cudaMallocManaged((void **)&h_inz, size);
-  ROS_INFO("%s\n", "Memory reservation");
+  // ROS_INFO("%s\n", "Memory reservation");
 }
 
 /*****************************************************************************/
