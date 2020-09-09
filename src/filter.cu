@@ -14,15 +14,9 @@ __global__ void trim(
   int index = threadIdx.x + blockIdx.x * blockDim.x;
 
   if( inz[index] < 0.3 && index < size){
-    inz[index] = 0.3;
-  }
-}
-
-void random_ints(int *i, int size)
-{
-  for(int k=0; k<size; k++)
-  {
-    i[k]=rand()%50;
+    inx[index] = 0.0;
+    iny[index] = 0.0;
+    inz[index] = 0.0;
   }
 }
 
