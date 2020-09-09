@@ -75,6 +75,8 @@
 #include "message_filters/subscriber.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include <tf2/buffer_core.h>
+// handy omp_get_wtime()
+#include <omp.h>
 
 namespace spatio_temporal_voxel_layer
 {
