@@ -60,7 +60,6 @@ struct MeasurementReading
   MeasurementReading() :
   /*****************************************************************************/
                                       _cloud(new sensor_msgs::PointCloud2()),
-                                      _cuda_vector(0)
   {
   }
 
@@ -117,7 +116,6 @@ struct MeasurementReading
   sensor_msgs::PointCloud2::Ptr _cloud;
   // float *_p;
   float *_h_inx, *_h_iny, *_h_inz;
-  float *_cuda_vector;
   int _initialized;
   double _obstacle_range_in_m, _min_z_in_m, _max_z_in_m;
   double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad;

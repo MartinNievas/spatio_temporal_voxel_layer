@@ -178,7 +178,6 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
       size_t size = (*cld_global).width*(*cld_global).height;
       size_t memory_size = size * sizeof(float);
 
-      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._cuda_vector), memory_size));
       checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inx), memory_size));
       checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_iny), memory_size));
       checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inz), memory_size));
@@ -197,7 +196,6 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
       cloud_pcl.points.resize(cloud.width * cloud.height);
 
       for(size_t i=0; i < size; ++i){
-        _observation_list.front()._cuda_vector[i] = 1;
         _observation_list.front()._h_inx[i] = *(iter_x+i);
         _observation_list.front()._h_iny[i] = *(iter_y+i);
         _observation_list.front()._h_inz[i] = *(iter_z+i);
@@ -300,7 +298,6 @@ void MeasurementBuffer::RemoveStaleObservations(void)
     readings_iter cuda_iter = _observation_list.begin();
     for (cuda_iter = _observation_list.begin(); cuda_iter != _observation_list.end(); ++cuda_iter)
     {
-      cudaFree((*cuda_iter)._cuda_vector);
       cudaFree((*cuda_iter)._h_inx);
       cudaFree((*cuda_iter)._h_iny);
       cudaFree((*cuda_iter)._h_inz);
