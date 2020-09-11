@@ -184,11 +184,11 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 
       // ROS_INFO("%s%d%s\n", "Filtering:", size, " points");
 
-      if (_initialized == 0){
-        ask_for_memory(memory_size);
-        ROS_INFO("%s\n", "CUDA memory reservation");
-        _initialized = 1;
-      }
+      // if (_initialized == 0){
+        // ask_for_memory(memory_size);
+        // ROS_INFO("%s\n", "CUDA memory reservation");
+        // _initialized = 1;
+      // }
 
       // Fill in the cloud data
       cloud_pcl.width  = cloud.width;

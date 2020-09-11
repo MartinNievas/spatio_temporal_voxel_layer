@@ -59,7 +59,7 @@ struct MeasurementReading
   /*****************************************************************************/
   MeasurementReading() :
   /*****************************************************************************/
-                                      _cloud(new sensor_msgs::PointCloud2()),
+                                      _cloud(new sensor_msgs::PointCloud2())
   {
   }
 
