@@ -37,6 +37,9 @@
 
 #include <spatio_temporal_voxel_layer/spatio_temporal_voxel_grid.hpp>
 #include <omp.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include "helper_cuda.h"
 
 namespace volume_grid
 {
@@ -309,6 +312,15 @@ void SpatioTemporalVoxelGrid::operator()(const \
     sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
+    // Hay que iterar sobre los puntos que están en cuda
+    float *cuda_points;
+    size_t size = (*(obs._cloud)).width * (*(obs._cloud)).height;
+    size_t memory_size = size * sizeof(float);
+
+    checkCudaErrors(cudaMallocManaged((void **)&cuda_points, memory_size));
+    checkCudaErrors(cudaFree(cuda_points));
+
+
     start = omp_get_wtime();
     for (iter_x, iter_y, iter_z; iter_x !=iter_x.end(); \
          ++iter_x, ++iter_y, ++iter_z)
@@ -332,7 +344,7 @@ void SpatioTemporalVoxelGrid::operator()(const \
     }
     end = omp_get_wtime();
     elapsed = end-start;
-    // ROS_INFO("%s%f\n", "Operator time:", elapsed);
+    ROS_INFO("%s%f\n", "Operator time:", elapsed);
   }
   return;
 }
