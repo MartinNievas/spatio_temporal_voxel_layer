@@ -72,6 +72,7 @@
 #include <boost/thread/recursive_mutex.hpp>
 // handy omp_get_wtime()
 #include <omp.h>
+#define THREADS_PER_BLOCK 128
 
 namespace volume_grid
 {

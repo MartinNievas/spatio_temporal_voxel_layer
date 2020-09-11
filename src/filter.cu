@@ -20,6 +20,34 @@ __global__ void trim(
   }
 }
 
+// Global function means it will be executed on the device (GPU)
+__global__ void distance(
+    float * const __restrict__ inx,
+    float * const __restrict__ iny,
+    float * const __restrict__ inz,
+    int * const __restrict__ indexes,
+    float const origin_x,
+    float const origin_y,
+    float const origin_z,
+    float const mark_range,
+    int const size)
+{
+  int index = threadIdx.x + blockIdx.x * blockDim.x;
+
+  if (index < size){
+    float distance_2 =
+        (inx[index] - origin_x) * (inx[index] - origin_x) +
+        (iny[index] - origin_y) * (iny[index] - origin_y) +
+        (inz[index] - origin_z) * (inz[index] - origin_z);
+
+    if (distance_2 > mark_range || distance_2 < 0.0001){
+      indexes[index] = 1;
+    } else {
+      indexes[index] = 0;
+    }
+  }
+}
+
 template<typename T>
 T div_round_up(T a, T b) {
   return (a + b - 1) / b;
@@ -31,7 +59,7 @@ float *filter(
     float * inz,
     size_t size, size_t threads)
 {
-  printf("Filter! %d\n", size);
+  printf("Filter! %ld\n", size);
 
   trim<<<div_round_up(size,threads),threads>>>(inx, iny, inz, size);
   getLastCudaError("trim() kernel failed");
@@ -41,5 +69,29 @@ float *filter(
 
   return inx;
 }
+
+float *compute_distance(
+    float * inx,
+    float * iny,
+    float * inz,
+    int * index_array,
+    float origin_x,
+    float origin_y,
+    float origin_z,
+    float mark_range,
+    size_t size, size_t threads)
+{
+  printf("Compute Distance! %ld\n", size);
+
+  distance<<<div_round_up(size,threads),threads>>>(inx, iny, inz, index_array, \
+      origin_x, origin_y, origin_z, mark_range, size);
+  getLastCudaError("distance() kernel failed");
+
+  // Wait for the GPU to finish
+  cudaDeviceSynchronize();
+
+  return inx;
+}
+
 
 
