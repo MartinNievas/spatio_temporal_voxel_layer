@@ -727,7 +727,7 @@ void SpatioTemporalVoxelLayer::updateBounds( \
     _voxel_grid->ClearFrustums(clearing_observations);
     end = omp_get_wtime();
     elapsed = end-start;
-    ROS_INFO("%s%f\n", "Clear Frusums time:", elapsed);
+    // ROS_INFO("%s%f\n", "Clear Frusums time:", elapsed);
   }
   else if (ros::Time::now() - _last_map_save_time > _map_save_duration)
   {
@@ -749,14 +749,14 @@ void SpatioTemporalVoxelLayer::updateBounds( \
   _voxel_grid->Mark(marking_observations);
   end = omp_get_wtime();
   elapsed = end-start;
-  ROS_INFO("%s%f\n", "Mark observation time:", elapsed);
+  // ROS_INFO("%s%f\n", "Mark observation time:", elapsed);
 
   // update the ROS Layered Costmap
   start = omp_get_wtime();
   UpdateROSCostmap(min_x, min_y, max_x, max_y);
   end = omp_get_wtime();
   elapsed = end-start;
-  ROS_INFO("%s%f\n", "Update Cost Map time:", elapsed);
+  // ROS_INFO("%s%f\n", "Update Cost Map time:", elapsed);
 
 
   // publish point cloud in navigation mode

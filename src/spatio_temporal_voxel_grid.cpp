@@ -286,7 +286,7 @@ void SpatioTemporalVoxelGrid::Mark(const \
     }
     end = omp_get_wtime();
     elapsed = end-start;
-    ROS_INFO("%s%f\n", "Call Mark time:", elapsed);
+    // ROS_INFO("%s%f\n", "Call Mark time:", elapsed);
   }
   return;
 }
@@ -332,7 +332,7 @@ void SpatioTemporalVoxelGrid::operator()(const \
     }
     end = omp_get_wtime();
     elapsed = end-start;
-    ROS_INFO("%s%f\n", "Operator time:", elapsed);
+    // ROS_INFO("%s%f\n", "Operator time:", elapsed);
   }
   return;
 }

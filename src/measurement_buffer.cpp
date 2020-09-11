@@ -40,6 +40,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include "helper_cuda.h"
 
 int *testmain(int num, int threads);
 float *filter(float*,float*,float*,size_t,size_t);
@@ -121,6 +122,8 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     local_pose.header.stamp = cloud.header.stamp;
     local_pose.header.frame_id = origin_frame;
 
+    // Check for timeout constant
+    // I'm really checking here?
     _buffer.canTransform(_global_frame, local_pose.header.frame_id , \
                          local_pose.header.stamp, ros::Duration(0.5));
     _buffer.transform(local_pose, global_pose, _global_frame);
@@ -173,13 +176,18 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 
       // Memory allocation issue
       size_t size = (*cld_global).width*(*cld_global).height;
-
       size_t memory_size = size * sizeof(float);
+
+      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._cuda_vector), memory_size));
+      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inx), memory_size));
+      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_iny), memory_size));
+      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inz), memory_size));
 
       // ROS_INFO("%s%d%s\n", "Filtering:", size, " points");
 
       if (_initialized == 0){
         ask_for_memory(memory_size);
+        ROS_INFO("%s\n", "CUDA memory reservation");
         _initialized = 1;
       }
 
@@ -189,21 +197,27 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
       cloud_pcl.points.resize(cloud.width * cloud.height);
 
       for(size_t i=0; i < size; ++i){
-        h_inx[i] = *(iter_x+i);
-        h_iny[i] = *(iter_y+i);
-        h_inz[i] = *(iter_z+i);
+        _observation_list.front()._cuda_vector[i] = 1;
+        _observation_list.front()._h_inx[i] = *(iter_x+i);
+        _observation_list.front()._h_iny[i] = *(iter_y+i);
+        _observation_list.front()._h_inz[i] = *(iter_z+i);
       }
 
-      p = filter(h_inx, h_iny, h_inz, size, THREADS_PER_BLOCK);
+      ROS_INFO("%s\n", "CUDA filter");
+      p = filter(
+          _observation_list.front()._h_inx,
+          _observation_list.front()._h_iny,
+          _observation_list.front()._h_inz,
+          size, THREADS_PER_BLOCK);
 
-      // ROS_INFO("%s\n", "Fill pointcloud");
+      ROS_INFO("%s\n", "Fill pointcloud");
       // ROS_INFO("%s_%f,%f,%f\n", "Fill pointcloud", h_inx[0], h_iny[0], h_inz[0]);
 
       for (size_t i = 0; i < cloud_pcl.points.size(); ++i)
       {
-        cloud_pcl.points[i].x = h_inx[i];
-        cloud_pcl.points[i].y = h_iny[i];
-        cloud_pcl.points[i].z = h_inz[i];
+        cloud_pcl.points[i].x = _observation_list.front()._h_inx[i];
+        cloud_pcl.points[i].y = _observation_list.front()._h_iny[i];
+        cloud_pcl.points[i].z = _observation_list.front()._h_inz[i];
       }
 
       // ROS_INFO("%s\n", "Convert pointcloud");
@@ -282,6 +296,16 @@ void MeasurementBuffer::RemoveStaleObservations(void)
   readings_iter it = _observation_list.begin();
   if (_observation_keep_time == ros::Duration(0.0))
   {
+
+    readings_iter cuda_iter = _observation_list.begin();
+    for (cuda_iter = _observation_list.begin(); cuda_iter != _observation_list.end(); ++cuda_iter)
+    {
+      cudaFree((*cuda_iter)._cuda_vector);
+      cudaFree((*cuda_iter)._h_inx);
+      cudaFree((*cuda_iter)._h_iny);
+      cudaFree((*cuda_iter)._h_inz);
+    }
+
     _observation_list.erase(++it, _observation_list.end());
     return;
   }
@@ -293,6 +317,8 @@ void MeasurementBuffer::RemoveStaleObservations(void)
 
     if (time_diff > _observation_keep_time)
     {
+      ROS_INFO("%s\n", "CUDA Memory free");
+
       _observation_list.erase(it, _observation_list.end());
       return;
     }
@@ -303,9 +329,15 @@ void MeasurementBuffer::RemoveStaleObservations(void)
 void MeasurementBuffer::ask_for_memory(size_t size)
 /*****************************************************************************/
 {
-  cudaMallocManaged((void **)&h_inx, size);
-  cudaMallocManaged((void **)&h_iny, size);
-  cudaMallocManaged((void **)&h_inz, size);
+  checkCudaErrors(cudaMallocManaged((void **)&h_inx, size));
+  checkCudaErrors(cudaMallocManaged((void **)&h_iny, size));
+  checkCudaErrors(cudaMallocManaged((void **)&h_inz, size));
+  ROS_INFO("%s%d\n", "add)observation list siz ", _observation_list.size());
+  ROS_INFO("%s\n%p\n%p\n%p\n", "cuda ALLOCATE ointer: ",
+      h_inx,
+      h_iny,
+      h_inz
+      );
   // ROS_INFO("%s\n", "Memory reservation");
 }
 
