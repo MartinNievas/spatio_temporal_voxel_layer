@@ -33,14 +33,14 @@ __global__ void distance(
     int const size)
 {
   int index = threadIdx.x + blockIdx.x * blockDim.x;
+  float distance = inx[index];
 
   if (index < size){
-    float distance_2 =
-        (inx[index] - origin_x) * (inx[index] - origin_x) +
-        (iny[index] - origin_y) * (iny[index] - origin_y) +
-        (inz[index] - origin_z) * (inz[index] - origin_z);
-
-    if (distance_2 > mark_range || distance_2 < 0.0001){
+    // distance =  (inx[index] - origin_x) * (inx[index] - origin_x) +
+    //             (iny[index] - origin_y) * (iny[index] - origin_y) +
+    //             (inz[index] - origin_z) * (inz[index] - origin_z);
+    //
+    if (distance > mark_range || distance < 0.0001){
       indexes[index] = 1;
     } else {
       indexes[index] = 0;

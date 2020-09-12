@@ -327,30 +327,35 @@ void SpatioTemporalVoxelGrid::operator()(const \
     // ROS_INFO("Cloud dimension:%d,%d\n", (*(obs._cloud)).width,(*(obs._cloud)).height);
 
     checkCudaErrors(cudaMallocManaged((void **)&index_array, memory_size));
-    checkCudaErrors(cudaMallocManaged((void **)&index_array_x, memory_size_float));
-    checkCudaErrors(cudaMallocManaged((void **)&index_array_y, memory_size_float));
-    checkCudaErrors(cudaMallocManaged((void **)&index_array_z, memory_size_float));
+    // checkCudaErrors(cudaMallocManaged((void **)&index_array_x, memory_size_float));
+    // checkCudaErrors(cudaMallocManaged((void **)&index_array_y, memory_size_float));
+    // checkCudaErrors(cudaMallocManaged((void **)&index_array_z, memory_size_float));
 
     ROS_INFO("%s\n", "CUDA distance");
 
-    start = omp_get_wtime();
-    p = compute_distance(
-        index_array_x,
-        index_array_y,
-        index_array_z,
-        index_array,
-        obs._origin.x,
-        obs._origin.y,
-        obs._origin.z,
-        mark_range_2,
-        size, THREADS_PER_BLOCK);
-    elapsed = end-start;
-    ROS_INFO("%s%f\n", "Compute distance CUDA time:", elapsed);
+    // start = omp_get_wtime();
+    // p = compute_distance(
+    //     obs._h_inx,
+    //     obs._h_iny,
+    //     obs._h_inz,
+    //     index_array,
+    //     obs._origin.x,
+    //     obs._origin.y,
+    //     obs._origin.z,
+    //     mark_range_2,
+    //     size, THREADS_PER_BLOCK);
+    // elapsed = end-start;
+    // ROS_INFO("%s%f\n", "Compute distance CUDA time:", elapsed);
 
-    checkCudaErrors(cudaFree(index_array));
-    checkCudaErrors(cudaFree(index_array_x));
-    checkCudaErrors(cudaFree(index_array_y));
-    checkCudaErrors(cudaFree(index_array_z));
+    // for (size_t i = 0; i < size; i++){
+      // if(index_array[i] == 0)
+        // index_array[i] = 2;
+    // }
+
+    cudaFree(index_array);
+    // checkCudaErrors(cudaFree(index_array_x));
+    // checkCudaErrors(cudaFree(index_array_y));
+    // checkCudaErrors(cudaFree(index_array_z));
 
     start = omp_get_wtime();
     for (iter_x, iter_y, iter_z; iter_x !=iter_x.end(); \
