@@ -130,6 +130,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
                          local_pose.header.stamp, ros::Duration(0.5));
     _buffer.transform(local_pose, global_pose, _global_frame);
 
+
     _observation_list.front()._origin.x = global_pose.pose.position.x;
     _observation_list.front()._origin.y = global_pose.pose.position.y;
     _observation_list.front()._origin.z = global_pose.pose.position.z;
@@ -170,7 +171,6 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     if ( _voxel_filter )
     {
 
-      _observation_list.front()._being_processed = 1;
       // ROS_INFO("%s(%d,%d)\n", "cloud_msg size: ", (*cld_global).width, (*cld_global).height);
       sensor_msgs::PointCloud2 const& cloud_msg = *cld_global;
       sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud_msg, "x");
@@ -271,7 +271,6 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     }
 
     // pcl_conversions::fromPCL(*cloud_filtered, *cld_global);
-    _observation_list.front()._being_processed = 0;
     _observation_list.front()._cloud = output;
   }
   catch (tf::TransformException& ex)
@@ -311,6 +310,7 @@ void MeasurementBuffer::RemoveStaleObservations(void)
     return;
   }
 
+  ROS_INFO("%s\n", "Remove Stale Observation");
   readings_iter it = _observation_list.begin();
   if (_observation_keep_time == ros::Duration(0.0))
   {

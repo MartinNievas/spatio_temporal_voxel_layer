@@ -117,7 +117,7 @@ struct MeasurementReading
   // float *_p;
   float *_h_inx, *_h_iny, *_h_inz;
   int *_index_array;
-  int _initialized, _being_processed;
+  int _initialized;
   double _obstacle_range_in_m, _min_z_in_m, _max_z_in_m;
   double _vertical_fov_in_rad, _vertical_fov_padding_in_m, _horizontal_fov_in_rad;
   double _marking, _clearing, _decay_acceleration;
