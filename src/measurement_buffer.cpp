@@ -102,7 +102,6 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 /*****************************************************************************/
 {
 
-  float start = 0.0, end = 0.0, elapsed = 0.0;
 
   // add a new measurement to be populated
   _observation_list.push_front(observation::MeasurementReading());
@@ -177,7 +176,11 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
       sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud_msg, "y");
       sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud_msg, "z");
 
-      // Memory allocation issue
+      float start = 0.0, end = 0.0, elapsed = 0.0;
+      cudaEvent_t start_cuda, stop_cuda;
+      cudaEventCreate(&start_cuda);
+      cudaEventCreate(&stop_cuda);
+
       size_t size = (*cld_global).width*(*cld_global).height;
       size_t memory_size = size * sizeof(float);
       size_t memory_size_int = size * sizeof(float);
@@ -208,6 +211,8 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
         _observation_list.front()._h_inz[i] = *(iter_z+i);
       }
 
+      cudaEventRecord(start_cuda);
+      start = omp_get_wtime();
       ROS_INFO("%s\n", "CUDA filter");
       p = filter(
           _observation_list.front()._h_inx,
@@ -215,17 +220,17 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
           _observation_list.front()._h_inz,
           size, THREADS_PER_BLOCK);
 
-      ROS_INFO("%s\n", "CUDA distance");
-      p = compute_distance(
-          _observation_list.front()._h_inx,
-          _observation_list.front()._h_iny,
-          _observation_list.front()._h_inz,
-          _observation_list.front()._index_array,
-          _observation_list.front()._origin.x,
-          _observation_list.front()._origin.y,
-          _observation_list.front()._origin.z,
-          mark_range_2,
-          size, THREADS_PER_BLOCK);
+      // ROS_INFO("%s\n", "CUDA distance");
+      // p = compute_distance(
+      //     _observation_list.front()._h_inx,
+      //     _observation_list.front()._h_iny,
+      //     _observation_list.front()._h_inz,
+      //     _observation_list.front()._index_array,
+      //     _observation_list.front()._origin.x,
+      //     _observation_list.front()._origin.y,
+      //     _observation_list.front()._origin.z,
+      //     mark_range_2,
+      //     size, THREADS_PER_BLOCK);
 
       ROS_INFO("%s\n", "Fill pointcloud");
       // ROS_INFO("%s_%f,%f,%f\n", "Fill pointcloud", h_inx[0], h_iny[0], h_inz[0]);
@@ -239,6 +244,12 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
 
       // ROS_INFO("%s\n", "Convert pointcloud");
       pcl::toROSMsg(cloud_pcl, *output);
+      cudaEventRecord(stop_cuda);
+      elapsed = end-start;
+
+      float milliseconds = 0;
+      cudaEventElapsedTime(&milliseconds, start_cuda, stop_cuda);
+      ROS_INFO("%s%f\n", "Filtered time:", milliseconds);
 
       // start = omp_get_wtime();
       // pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
