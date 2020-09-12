@@ -305,7 +305,7 @@ void SpatioTemporalVoxelGrid::operator()(const \
 
   float start = 0.0, end = 0.0, elapsed = 0.0;
 
-  if (obs._marking)
+  if (obs._marking && obs._being_processed == 0)
   {
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
     const double cur_time = ros::WallTime::now().toSec();
@@ -316,23 +316,23 @@ void SpatioTemporalVoxelGrid::operator()(const \
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
     // Hay que iterar sobre los puntos que están en cuda
-    int *index_array;
-    float *index_array_x;
-    float *index_array_y;
-    float *index_array_z;
-    float *p;
-    size_t size = (*(obs._cloud)).width * (*(obs._cloud)).height;
-    size_t memory_size = size * sizeof(int);
-    size_t memory_size_float = size * sizeof(float);
+    // int *index_array;
+    // float *index_array_x;
+    // float *index_array_y;
+    // float *index_array_z;
+    // float *p;
+    // size_t size = (*(obs._cloud)).width * (*(obs._cloud)).height;
+    // size_t memory_size = size * sizeof(int);
+    // size_t memory_size_float = size * sizeof(float);
     // ROS_INFO("Cloud dimension:%d,%d\n", (*(obs._cloud)).width,(*(obs._cloud)).height);
 
-    checkCudaErrors(cudaMallocManaged((void **)&index_array, memory_size));
-    // checkCudaErrors(cudaMallocManaged((void **)&index_array_x, memory_size_float));
-    // checkCudaErrors(cudaMallocManaged((void **)&index_array_y, memory_size_float));
-    // checkCudaErrors(cudaMallocManaged((void **)&index_array_z, memory_size_float));
-
-    ROS_INFO("%s\n", "CUDA distance");
-
+    // checkCudaErrors(cudaMallocManaged((void **)&index_array, memory_size));
+    // // checkCudaErrors(cudaMallocManaged((void **)&index_array_x, memory_size_float));
+    // // checkCudaErrors(cudaMallocManaged((void **)&index_array_y, memory_size_float));
+    // // checkCudaErrors(cudaMallocManaged((void **)&index_array_z, memory_size_float));
+    //
+    // ROS_INFO("%s\n", "CUDA distance");
+    //
     // start = omp_get_wtime();
     // p = compute_distance(
     //     obs._h_inx,
@@ -346,13 +346,13 @@ void SpatioTemporalVoxelGrid::operator()(const \
     //     size, THREADS_PER_BLOCK);
     // elapsed = end-start;
     // ROS_INFO("%s%f\n", "Compute distance CUDA time:", elapsed);
-
-    // for (size_t i = 0; i < size; i++){
-      // if(index_array[i] == 0)
-        // index_array[i] = 2;
-    // }
-
-    cudaFree(index_array);
+    //
+    // // for (size_t i = 0; i < size; i++){
+    //   // if(index_array[i] == 0)
+    //     // index_array[i] = 2;
+    // // }
+    //
+    // cudaFree(index_array);
     // checkCudaErrors(cudaFree(index_array_x));
     // checkCudaErrors(cudaFree(index_array_y));
     // checkCudaErrors(cudaFree(index_array_z));
