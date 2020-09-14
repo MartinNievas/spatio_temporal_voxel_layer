@@ -318,20 +318,24 @@ void SpatioTemporalVoxelGrid::operator()(const \
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
     size_t size = (*(obs._cloud)).width * (*(obs._cloud)).height;
+    ROS_INFO("%s%d", "cloud mak size: ", size);
 
     // New version with _index_array on GPU
     // for (size_t i = 0; i < size; i++)
     // {
-    //   if (*(obs._index_array+i) == 1)
+    //
+    //   ROS_INFO("%s%p", "cloud mak size: ", obs._h_index_array);
+    //   if (*((obs._h_index_array)+i) == 1)
     //   {
+    //     ROS_INFO("%s%p", "cloud mak size: ", obs._h_index_array[i]);
     //     openvdb::Vec3d mark_grid(this->WorldToIndex( \
     //                                openvdb::Vec3d(*(iter_x+i), *(iter_y+i), *(iter_z+i))));
     //
-    //     if(!this->MarkGridPoint(openvdb::Coord(mark_grid[0], mark_grid[1], \
-    //                                            mark_grid[2]), cur_time))
-    //     {
-    //       std::cout << "Failed to mark point." << std::endl;
-    //     }
+    //     // if(!this->MarkGridPoint(openvdb::Coord(mark_grid[0], mark_grid[1], \
+    //                                            // mark_grid[2]), cur_time))
+    //     // {
+    //       // std::cout << "Failed to mark point." << std::endl;
+    //     // }
     //   }
     // }
 

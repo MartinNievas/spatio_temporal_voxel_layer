@@ -36,10 +36,10 @@ __global__ void distance(
   float distance = inx[index];
 
   if (index < size){
-    // distance =  (inx[index] - origin_x) * (inx[index] - origin_x) +
-    //             (iny[index] - origin_y) * (iny[index] - origin_y) +
-    //             (inz[index] - origin_z) * (inz[index] - origin_z);
-    //
+    distance =  (inx[index] - origin_x) * (inx[index] - origin_x) +
+                (iny[index] - origin_y) * (iny[index] - origin_y) +
+                (inz[index] - origin_z) * (inz[index] - origin_z);
+
     if (distance > mark_range || distance < 0.0001){
       indexes[index] = 1;
     } else {
