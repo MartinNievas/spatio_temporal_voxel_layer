@@ -59,7 +59,7 @@ float *filter(
     float * inz,
     size_t size, size_t threads)
 {
-  printf("Filter! %ld\n", size);
+  // printf("Filter! %ld\n", size);
 
   trim<<<div_round_up(size,threads),threads>>>(inx, iny, inz, size);
   getLastCudaError("trim() kernel failed");
@@ -81,7 +81,7 @@ float *compute_distance(
     float mark_range,
     size_t size, size_t threads)
 {
-  printf("Compute Distance! %ld\n", size);
+  // printf("Compute Distance! %ld\n", size);
 
   distance<<<div_round_up(size,threads),threads>>>(inx, iny, inz, index_array, \
       origin_x, origin_y, origin_z, mark_range, size);

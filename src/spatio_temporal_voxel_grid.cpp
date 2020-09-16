@@ -308,7 +308,7 @@ void SpatioTemporalVoxelGrid::operator()(const \
   if (obs._marking)
   {
 
-    ROS_INFO("%s", "Mark operation");
+    // ROS_INFO("%s", "Mark operation");
     float mark_range_2 = obs._obstacle_range_in_m * obs._obstacle_range_in_m;
     const double cur_time = ros::WallTime::now().toSec();
 
@@ -317,27 +317,36 @@ void SpatioTemporalVoxelGrid::operator()(const \
     sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud, "y");
     sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud, "z");
 
-    size_t size = (*(obs._cloud)).width * (*(obs._cloud)).height;
-    ROS_INFO("%s%d", "cloud mak size: ", size);
+    // const sensor_msgs::PointCloud2& distances = *(obs._distance);
+    // sensor_msgs::PointCloud2ConstIterator<float> iter_distance(distances, "x");
+
+    // size_t size = (*(obs._distance)).width * (*(obs._distance)).height;
+    // size_t size_d = (*(obs._cloud)).width * (*(obs._cloud)).height;
+    // ROS_INFO("%d_%d", "cloud mak size: ", size, size_d);
 
     // New version with _index_array on GPU
-    // for (size_t i = 0; i < size; i++)
+    size_t i = 0;
+    // Old version that iterates over _cloud data
+    // start = omp_get_wtime();
+    // for (iter_distance; iter_distance != iter_distance.end(); ++iter_distance, ++i)
     // {
     //
-    //   ROS_INFO("%s%p", "cloud mak size: ", obs._h_index_array);
-    //   if (*((obs._h_index_array)+i) == 1)
+    //   if ( *iter_distance == 1)
     //   {
-    //     ROS_INFO("%s%p", "cloud mak size: ", obs._h_index_array[i]);
+    //     // ROS_INFO("%s", "cloud mak size: ");
     //     openvdb::Vec3d mark_grid(this->WorldToIndex( \
     //                                openvdb::Vec3d(*(iter_x+i), *(iter_y+i), *(iter_z+i))));
     //
-    //     // if(!this->MarkGridPoint(openvdb::Coord(mark_grid[0], mark_grid[1], \
-    //                                            // mark_grid[2]), cur_time))
-    //     // {
-    //       // std::cout << "Failed to mark point." << std::endl;
-    //     // }
+    //     if(!this->MarkGridPoint(openvdb::Coord(mark_grid[0], mark_grid[1], \
+    //                                            mark_grid[2]), cur_time))
+    //     {
+    //       std::cout << "Failed to mark point." << std::endl;
+    //     }
     //   }
     // }
+    // end = omp_get_wtime();
+    // elapsed = end-start;
+    // ROS_INFO("%s%f", "NEW Operator time:", elapsed);
 
     // Old version that iterates over _cloud data
     start = omp_get_wtime();
@@ -363,7 +372,7 @@ void SpatioTemporalVoxelGrid::operator()(const \
     }
     end = omp_get_wtime();
     elapsed = end-start;
-    ROS_INFO("%s%f\n", "Operator time:", elapsed);
+    ROS_INFO("%s%f", "Operator time:", elapsed);
   }
   return;
 }

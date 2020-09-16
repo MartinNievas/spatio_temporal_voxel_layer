@@ -167,7 +167,17 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     pcl_conversions::toPCL(*cld_global, *cloud_pcl);
 
     pcl::PointCloud<pcl::PointXYZ> cloud_filtered_cuda;
+    pcl::PointCloud<pcl::PointXYZ> cloud_distances;
+    point_cloud_ptr cld_distance(new sensor_msgs::PointCloud2());
 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_p (new pcl::PointCloud<pcl::PointXYZ>);
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr point_cloud_ptr(&point_cloud);
+
+    // pcl::PCLPointCloud2 pcl_pc2;
+    // pcl_conversions::toPCL(*cld_global, pcl_pc2);
+    // pcl::fromPCLPointCloud2(pcl_pc2, point_cloud_p);
+    pcl::fromROSMsg(*cld_global, *point_cloud_p);
+    // pcl::moveFromROSMsg(*cld_global, point_cloud_p);
     // remove points that are below or above our height restrictions, and
     // in the same time, remove NaNs and if user wants to use it, combine with a
     if ( _voxel_filter )
@@ -175,98 +185,126 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
       float start = 0.0, end = 0.0, elapsed = 0.0;
       float start_omp_cuda = 0.0, end_omp_cuda = 0.0, elapsed_omp_cuda = 0.0;
 
-      cudaEvent_t start_cuda, stop_cuda;
-      cudaEventCreate(&start_cuda);
-      cudaEventCreate(&stop_cuda);
+      // cudaEvent_t start_cuda, stop_cuda;
+      // cudaEventCreate(&start_cuda);
+      // cudaEventCreate(&stop_cuda);
+
+      // start = omp_get_wtime();
+      // pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
+      // sor.setInputCloud (cloud_pcl);
+      // // sor.setFilterFieldName("z");
+      // // sor.setFilterLimits(_min_obstacle_height,_max_obstacle_height);
+      // sor.setDownsampleAllData(false);
+      // sor.setLeafSize ((float)_voxel_size,
+      //                  (float)_voxel_size,
+      //                  (float)_voxel_size);
+      // sor.setMinimumPointsNumberPerVoxel(static_cast<unsigned int>(_voxel_min_points));
+      // sor.filter(*cloud_filtered);
+
+      // ROS_INFO("%s%d", "Filtering cloud size:", (*cloud_filtered).width * (*cloud_filtered).height);
+      // pcl_conversions::fromPCL(*cloud_filtered, *cld_global);
+      // end = omp_get_wtime();
+      // float elapsed_pcl = end-start;
+      float elapsed_pcl = 0;
 
       start = omp_get_wtime();
-      pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
-      sor.setInputCloud (cloud_pcl);
-      // sor.setFilterFieldName("z");
-      // sor.setFilterLimits(_min_obstacle_height,_max_obstacle_height);
-      sor.setDownsampleAllData(true);
-      sor.setLeafSize ((float)_voxel_size,
-                       (float)_voxel_size,
-                       (float)_voxel_size);
-      sor.setMinimumPointsNumberPerVoxel(static_cast<unsigned int>(_voxel_min_points));
-      sor.filter(*cloud_filtered);
-
-      ROS_INFO("%s%d", "Filtering cloud size:", (*cloud_filtered).width * (*cloud_filtered).height);
-      pcl_conversions::fromPCL(*cloud_filtered, *cld_global);
+      CCudaWrapper cudaWrapper;
+      cudaWrapper.downsampling(*point_cloud_p, _voxel_size);
+      // int chaos;
+      // printf("Ingresá algo: ");
+      // scanf("%d", &chaos);
+      pcl::toROSMsg(*point_cloud_p, *cld_global);
       end = omp_get_wtime();
-      elapsed = end-start;
-      ROS_INFO("%s%f", "Filtered pcl time:", elapsed);
+      float elapsed_cuda = end-start;
+      // float elapsed_cuda = 0;
+      ROS_INFO("|%f,%f", elapsed_pcl, elapsed_cuda);
 
-      start_omp_cuda = omp_get_wtime();
-      cudaEventRecord(start_cuda);
-      sensor_msgs::PointCloud2 const& cloud_msg = *cld_global;
-      sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud_msg, "x");
-      sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud_msg, "y");
-      sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud_msg, "z");
-
-      size_t size = (*cloud_filtered).width*(*cloud_filtered).height;
-      size_t memory_size = size * sizeof(float);
-      size_t memory_size_int = size * sizeof(float);
-
-      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inx), memory_size));
-      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_iny), memory_size));
-      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inz), memory_size));
-      checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._index_array), memory_size));
-      _observation_list.front()._h_index_array = (int*) malloc(memory_size);
-
-      for(size_t i=0; i < size; ++i){
-        _observation_list.front()._h_inx[i] = *(iter_x+i);
-        _observation_list.front()._h_iny[i] = *(iter_y+i);
-        _observation_list.front()._h_inz[i] = *(iter_z+i);
-      }
-
-      p = filter(
-          _observation_list.front()._h_inx,
-          _observation_list.front()._h_iny,
-          _observation_list.front()._h_inz,
-          size, THREADS_PER_BLOCK);
-
-      p = compute_distance(
-          _observation_list.front()._h_inx,
-          _observation_list.front()._h_iny,
-          _observation_list.front()._h_inz,
-          _observation_list.front()._index_array,
-          _observation_list.front()._origin.x,
-          _observation_list.front()._origin.y,
-          _observation_list.front()._origin.z,
-          _observation_list.front()._obstacle_range_in_m,
-          size, THREADS_PER_BLOCK);
-
-      // Fill in the cloud data
-      cloud_filtered_cuda.width  = (*cloud_filtered).width;
-      cloud_filtered_cuda.height = (*cloud_filtered).height;
-      cloud_filtered_cuda.points.resize(cloud_filtered_cuda.width * cloud_filtered_cuda.height);
-
-      for (size_t i = 0; i < cloud_filtered_cuda.points.size(); ++i)
-      {
-          cloud_filtered_cuda.points[i].x = _observation_list.front()._h_inx[i];
-          cloud_filtered_cuda.points[i].y = _observation_list.front()._h_iny[i];
-          cloud_filtered_cuda.points[i].z = _observation_list.front()._h_inz[i];
-          _observation_list.front()._h_index_array[i] = _observation_list.front()._index_array[i];
-      }
-
-      // ROS_INFO("%s\n", "Convert pointcloud");
-      pcl::toROSMsg(cloud_filtered_cuda, *cld_global);
-      // pcl_conversions::fromPCL(cloud_filtered_cuda, *cld_global);
-      cudaEventRecord(stop_cuda);
-      cudaEventSynchronize(stop_cuda);
-      end_omp_cuda = omp_get_wtime();
-      elapsed_omp_cuda = end_omp_cuda-start_omp_cuda;
-
-      float milliseconds = 0;
-      cudaEventElapsedTime(&milliseconds, start_cuda, stop_cuda);
-      ROS_INFO("%s%f", "Filtered CUDA time:", milliseconds);
-      ROS_INFO("%s%f", "Filtered full time:", elapsed_omp_cuda);
-
-      cudaFree(_observation_list.front()._h_inx);
-      cudaFree(_observation_list.front()._h_iny);
-      cudaFree(_observation_list.front()._h_inz);
-      cudaFree(_observation_list.front()._index_array);
+      // start_omp_cuda = omp_get_wtime();
+      // cudaEventRecord(start_cuda);
+      // sensor_msgs::PointCloud2 const& cloud_msg = *cld_global;
+      // sensor_msgs::PointCloud2ConstIterator<float> iter_x(cloud_msg, "x");
+      // sensor_msgs::PointCloud2ConstIterator<float> iter_y(cloud_msg, "y");
+      // sensor_msgs::PointCloud2ConstIterator<float> iter_z(cloud_msg, "z");
+      //
+      // size_t size = (*cloud_filtered).width*(*cloud_filtered).height;
+      // size_t memory_size = size * sizeof(float);
+      // size_t memory_size_int = size * sizeof(int);
+      //
+      // checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inx), memory_size));
+      // checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_iny), memory_size));
+      // checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._h_inz), memory_size));
+      // checkCudaErrors(cudaMallocManaged((void **)&(_observation_list.front()._index_array), memory_size_int));
+      // // _observation_list.front()._h_index_array = (int*) malloc(memory_size);
+      //
+      // #pragma omp parallel for
+      // for(size_t i=0; i < size; ++i){
+      //   _observation_list.front()._h_inx[i] = *(iter_x+i);
+      //   _observation_list.front()._h_iny[i] = *(iter_y+i);
+      //   _observation_list.front()._h_inz[i] = *(iter_z+i);
+      // }
+      //
+      // p = filter(
+      //     _observation_list.front()._h_inx,
+      //     _observation_list.front()._h_iny,
+      //     _observation_list.front()._h_inz,
+      //     size, THREADS_PER_BLOCK);
+      //
+      // p = compute_distance(
+      //     _observation_list.front()._h_inx,
+      //     _observation_list.front()._h_iny,
+      //     _observation_list.front()._h_inz,
+      //     _observation_list.front()._index_array,
+      //     _observation_list.front()._origin.x,
+      //     _observation_list.front()._origin.y,
+      //     _observation_list.front()._origin.z,
+      //     _observation_list.front()._obstacle_range_in_m,
+      //     size, THREADS_PER_BLOCK);
+      //
+      // // Fill in the cloud data
+      // cloud_filtered_cuda.width  = (*cloud_filtered).width;
+      // cloud_filtered_cuda.height = (*cloud_filtered).height;
+      // cloud_filtered_cuda.points.resize(cloud_filtered_cuda.width * cloud_filtered_cuda.height);
+      //
+      // cloud_distances.width  = (*cloud_filtered).width;
+      // cloud_distances.height = (*cloud_filtered).height;
+      // cloud_distances.points.resize(cloud_distances.width * cloud_distances.height);
+      // ROS_INFO("cloud_distances.size: %d", cloud_distances.points.size());
+      //
+      // // #dpragma omp parallel for
+      // for (size_t i = 0; i < cloud_filtered_cuda.points.size(); ++i)
+      // {
+      //     cloud_filtered_cuda.points[i].x = _observation_list.front()._h_inx[i];
+      //     cloud_filtered_cuda.points[i].y = _observation_list.front()._h_iny[i];
+      //     cloud_filtered_cuda.points[i].z = _observation_list.front()._h_inz[i];
+      // }
+      //
+      // // #dpragma omp parallel for
+      // for (size_t i = 0; i < size; ++i)
+      // {
+      //     cloud_distances.points[i].x = (float)_observation_list.front()._index_array[i];
+      //     cloud_distances.points[i].y = (float)_observation_list.front()._index_array[i];
+      //     cloud_distances.points[i].z = (float)_observation_list.front()._index_array[i];
+      // }
+      //
+      // // ROS_INFO("%s\n", "Convert pointcloud");
+      // pcl::toROSMsg(cloud_filtered_cuda, *cld_global);
+      // pcl::toROSMsg(cloud_distances, *cld_distance);
+      // // pcl_conversions::fromPCL(cloud_filtered_cuda, *cld_global);
+      // cudaEventRecord(stop_cuda);
+      // cudaEventSynchronize(stop_cuda);
+      // end_omp_cuda = omp_get_wtime();
+      // elapsed_omp_cuda = end_omp_cuda-start_omp_cuda;
+      //
+      // float milliseconds = 0;
+      // cudaEventElapsedTime(&milliseconds, start_cuda, stop_cuda);
+      // // ROS_INFO("%s%f", "Filtered CUDA time:", milliseconds);
+      // // ROS_INFO("%s%f", "Filtered full time:", elapsed_omp_cuda);
+      // ROS_INFO("|%f,%f,%f,",milliseconds, elapsed, elapsed_omp_cuda);
+      //
+      // cudaFree(_observation_list.front()._h_inx);
+      // cudaFree(_observation_list.front()._h_iny);
+      // cudaFree(_observation_list.front()._h_inz);
+      // cudaFree(_observation_list.front()._index_array);
     }
     else
     {
@@ -287,6 +325,7 @@ void MeasurementBuffer::BufferROSCloud(const sensor_msgs::PointCloud2& cloud)
     }
 
     _observation_list.front()._cloud = cld_global;
+    _observation_list.front()._distance = cld_distance;
   }
   catch (tf::TransformException& ex)
   {
@@ -353,7 +392,7 @@ void MeasurementBuffer::RemoveStaleObservations(void)
 
     if (time_diff > _observation_keep_time)
     {
-      ROS_INFO("%s\n", "CUDA Memory free----------");
+      // ROS_INFO("%s\n", "CUDA Memory free----------");
 
       _observation_list.erase(it, _observation_list.end());
       return;

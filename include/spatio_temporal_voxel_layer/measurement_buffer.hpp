@@ -46,6 +46,9 @@
 #include <pcl/filters/voxel_grid.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/point_types.h>
+#include <pcl/point_cloud.h>
+#include <pcl/console/parse.h>
 // STL
 #include <vector>
 #include <list>
@@ -67,6 +70,7 @@
 // handy omp_get_wtime()
 #include <omp.h>
 #define THREADS_PER_BLOCK 128
+#include "cudaWrapper.h"
 
 namespace buffer
 {
@@ -128,6 +132,7 @@ public:
 
 private:
 
+  // CCudaWrapper _cudaWrapper;
   int _initialized = 0;
   float *p;
   float *h_inx, *h_iny, *h_inz; // device copies of inputs and output

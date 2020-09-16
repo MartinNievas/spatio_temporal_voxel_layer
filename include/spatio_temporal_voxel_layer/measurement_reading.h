@@ -59,7 +59,8 @@ struct MeasurementReading
   /*****************************************************************************/
   MeasurementReading() :
   /*****************************************************************************/
-                                      _cloud(new sensor_msgs::PointCloud2())
+                                      _cloud(new sensor_msgs::PointCloud2()),
+                                      _distance(new sensor_msgs::PointCloud2())
   {
   }
 
@@ -71,6 +72,7 @@ struct MeasurementReading
   /*****************************************************************************/
                                       _origin(origin),                                   \
                                       _cloud(new sensor_msgs::PointCloud2(cloud)),       \
+                                      _distance(new sensor_msgs::PointCloud2(cloud)),       \
                                       _obstacle_range_in_m(obstacle_range),              \
                                       _min_z_in_m(min_z),                                \
                                       _max_z_in_m(max_z),                                \
@@ -88,6 +90,7 @@ struct MeasurementReading
   MeasurementReading(sensor_msgs::PointCloud2 cloud, double obstacle_range) :
   /*****************************************************************************/
                                     _cloud(new sensor_msgs::PointCloud2(cloud)), \
+                                    _distance(new sensor_msgs::PointCloud2(cloud)), \
                                     _obstacle_range_in_m(obstacle_range)
   {
   }
@@ -97,6 +100,7 @@ struct MeasurementReading
   /*****************************************************************************/
                              _origin(obs._origin),                                      \
                              _cloud(new sensor_msgs::PointCloud2(*(obs._cloud))), \
+                             _distance(new sensor_msgs::PointCloud2(*(obs._distance))), \
                              _obstacle_range_in_m(obs._obstacle_range_in_m),            \
                              _min_z_in_m(obs._min_z_in_m),                              \
                              _max_z_in_m(obs._max_z_in_m),                              \
@@ -114,6 +118,7 @@ struct MeasurementReading
   geometry_msgs::Point _origin;
   geometry_msgs::Quaternion _orientation;
   sensor_msgs::PointCloud2::Ptr _cloud;
+  sensor_msgs::PointCloud2::Ptr _distance;
   // float *_p;
   float *_h_inx, *_h_iny, *_h_inz;
   int *_index_array;

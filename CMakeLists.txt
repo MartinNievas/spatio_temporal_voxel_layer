@@ -73,7 +73,7 @@ include_directories(
     ${TBB_INCLUDE_DIRS}
 )
 
-add_definitions(${EIGEN3_DEFINITIONS})
+add_definitions(${EIGEN3_DEFINITIONS} ${PCL_DEFINITIONS})
 
 catkin_package(
     INCLUDE_DIRS
@@ -108,10 +108,23 @@ catkin_package(
 )
 
 # CUDA things
-set(CUDA_HOST_COMPILER "/usr/bin/gcc-6")
+set(CUDA_HOST_COMPILER "/usr/bin/gcc")
 SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
 SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
 CUDA_ADD_LIBRARY(TestLib SHARED src/filter.cu)
+
+set(CUDA_HOST_COMPILER "/usr/bin/gcc")
+SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
+SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
+CUDA_ADD_LIBRARY(downSample SHARED src/cudaWrapper.cpp
+  src/lesson_1.cu
+  )
+
+target_link_libraries(downSample
+  ${OPENGL_LIBRARIES} 
+  ${GLUT_LIBRARIES}
+  ${PCL_LIBRARIES}
+  )
 
 add_library(${PROJECT_NAME}
             src/spatio_temporal_voxel_layer.cpp
@@ -132,6 +145,7 @@ target_link_libraries(${PROJECT_NAME}
   ${TBB_LIBRARIES}
   ${catkin_LIBRARIES}
   TestLib
+  downSample
 )
 target_link_libraries(${PROJECT_NAME} PRIVATE "-lgomp")
 
