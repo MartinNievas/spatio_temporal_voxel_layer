@@ -108,7 +108,7 @@ catkin_package(
 )
 
 # CUDA things
-set(CUDA_HOST_COMPILER "/usr/bin/gcc")
+set(CUDA_HOST_COMPILER "/usr/bin/gcc-6")
 SET(CUDA_NVCC_FLAGS "-arch=compute_50" CACHE STRING "nvcc flags" FORCE)
 SET (CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
 CUDA_ADD_LIBRARY(TestLib SHARED src/filter.cu)
